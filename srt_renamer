@@ -1,0 +1,78 @@
+#!/usr/bin/env ruby
+
+require 'fileutils'
+
+VIDEO_EXTENSIONS = %w(avi mkv mp4).freeze
+SRT_EXTENSIONS   = %w(srt).freeze
+
+VIDEO_NAME_REGEXP = /(S\d{2}E\d{2}|\d{2}x\d{2})/i
+VIDEO_FILE_REGEXP = /\.(#{VIDEO_EXTENSIONS.join("|")})\z/
+SRT_FILE_REGEXP   = /\.(#{SRT_EXTENSIONS.join("|")})\z/
+
+class VideoFile
+  attr_reader :season, :episode, :file
+
+  def initialize(file)
+    @file = file
+    @season, @episode = file.match(VIDEO_NAME_REGEXP).to_a.first.scan(/(\d{2})/).flatten
+  end
+
+  def episode_regexp
+    /(S#{season}E#{episode}|#{season}x#{episode})/i
+  end
+
+  def file_without_extension
+    File.basename(file, ".*")
+  end
+end
+
+def video_name?(file)
+  file =~ VIDEO_NAME_REGEXP
+end
+
+def video_file?(file)
+  file =~ VIDEO_FILE_REGEXP && video_name?(file)
+end
+
+def srt_files
+  @_srt_files ||= Dir.entries(".").select { |f| f =~ SRT_FILE_REGEXP && f =~ VIDEO_NAME_REGEXP }
+end
+
+def srt_file(video_file)
+  srt_files.find { |srt_file| srt_file =~ video_file.episode_regexp }
+end
+
+def mv_files_to_root(dir)
+  FileUtils.mv(Dir.glob("#{dir}/*"), ".")
+  FileUtils.rmdir(dir)
+end
+
+def mv_srt_file(video_file, srt_file)
+  new_srt_file = "#{video_file.file_without_extension}#{File.extname(srt_file)}"
+  return if srt_file == new_srt_file
+
+  FileUtils.mv(srt_file, new_srt_file)
+end
+
+def move_subfolder_files_to_root
+  directories = Dir.entries(".").select { |f| File.directory?(f) }
+
+  directories.each do |dir|
+    next unless video_name?(dir)
+    mv_files_to_root(dir)
+  end
+end
+
+move_subfolder_files_to_root
+
+video_files =
+  Dir.entries(".").select { |f| video_file?(f) }.map do |video_file|
+    VideoFile.new(video_file)
+  end
+
+video_files.each do |video_file|
+  srt_file = srt_file(video_file)
+  next unless srt_file
+
+  mv_srt_file(video_file, srt_file)
+end
