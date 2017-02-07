@@ -43,8 +43,11 @@ def srt_file(video_file)
 end
 
 def mv_files_to_root(dir)
-  FileUtils.mv(Dir.glob("#{dir}/*"), ".")
-  FileUtils.rmdir(dir)
+  video_file = Dir.entries(dir).find { |f| video_file?(f) }
+
+  FileUtils.mv("#{dir}/#{video_file}", ".") if video_file && !video_file.empty?
+  
+  FileUtils.rm_rf(dir)
 end
 
 def mv_srt_file(video_file, srt_file)
