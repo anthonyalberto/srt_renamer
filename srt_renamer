@@ -5,7 +5,7 @@ require 'fileutils'
 VIDEO_EXTENSIONS = %w(avi mkv mp4).freeze
 SRT_EXTENSIONS   = %w(srt).freeze
 
-VIDEO_NAME_REGEXP = /(S\d{2} ?E\d{2}|\d{2}x\d{2})/i
+VIDEO_NAME_REGEXP = /(S\d{2}\s?E\d{2}|\d{2}x\d{2})/i
 VIDEO_FILE_REGEXP = /\.(#{VIDEO_EXTENSIONS.join("|")})\z/
 SRT_FILE_REGEXP   = /\.(#{SRT_EXTENSIONS.join("|")})\z/
 
@@ -18,7 +18,7 @@ class VideoFile
   end
 
   def episode_regexp
-    /(S#{season}E#{episode}|#{season}x#{episode})/i
+    /(S#{season}\s?E#{episode}|#{season}x#{episode})/i
   end
 
   def file_without_extension
@@ -46,7 +46,7 @@ def mv_files_to_root(dir)
   video_file = Dir.entries(dir).find { |f| video_file?(f) }
 
   FileUtils.mv("#{dir}/#{video_file}", ".") if video_file && !video_file.empty?
-  
+
   FileUtils.rm_rf(dir)
 end
 
@@ -76,6 +76,5 @@ video_files =
 video_files.each do |video_file|
   srt_file = srt_file(video_file)
   next unless srt_file
-
   mv_srt_file(video_file, srt_file)
 end
